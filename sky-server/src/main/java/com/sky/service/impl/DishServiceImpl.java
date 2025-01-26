@@ -96,12 +96,20 @@ public class DishServiceImpl implements DishService {
             // 当前菜品关联相关套餐，不能删除
             throw new DeletionNotAllowedException(MessageConstant.DISH_BE_RELATED_BY_SETMEAL);
         }
-        // 删除菜品
-        ids.forEach(id-> {
-            dishMapper.deleteById(id);
-            // 删除菜品关联的口味数据
-            dishFlavorMapper.deleteByDishId(id);
-        });
+        /**
+         * // 删除菜品
+         *         ids.forEach(id-> {
+         *             dishMapper.deleteById(id);
+         *             // 删除菜品关联的口味数据
+         *             dishFlavorMapper.deleteByDishId(id);
+         *         });
+         */
+        // 优化删除菜品功能 ---> 使用动态sql批量删除菜品及其口味数据
+        // 批量删除菜品数据
+        dishMapper.deleteByIds(ids);
+        // 批量删除口味数据
+        dishFlavorMapper.deleteByDishIds(ids);
+
     }
 
     /**
@@ -117,5 +125,46 @@ public class DishServiceImpl implements DishService {
                 .id(id)
                 .build();
         dishMapper.update(dish);
+    }
+
+    /**
+     * 根据id查询菜品和对应的口味数据
+     * @param id
+     * @return
+     */
+    @Override
+    public DishVO getByIdWithFlavor(Long id) {
+        // 根据id查询菜品数据
+        Dish dish = dishMapper.getById(id);
+        // 根据菜品id查询相应的口味数据
+        List<DishFlavor> dishFlavors = dishFlavorMapper.getByDishId(id);
+        // 将查询到的数据封装到VO中
+        DishVO dishVO = new DishVO();
+        BeanUtils.copyProperties(dish,dishVO);
+        dishVO.setFlavors(dishFlavors);
+        return dishVO;
+    }
+
+    /**
+     * 根据id修改菜品的基本信息及其相应的口味信息
+     * @param dishDTO
+     */
+    @Override
+    public void updateWithFlavor(DishDTO dishDTO) {
+        Dish dish = new Dish();
+        BeanUtils.copyProperties(dishDTO,dish);
+        // 修改菜品表基本信息
+        dishMapper.update(dish);
+        // 删除原有的口味数据
+        dishFlavorMapper.deleteByDishId(dishDTO.getId());
+        // 重新插入新的口味数据
+        List<DishFlavor> flavors = dishDTO.getFlavors();
+        if(flavors != null && !flavors.isEmpty()){
+            // 批量插入数据前先设置dishId
+            flavors.forEach(dishFlavor -> {
+                dishFlavor.setDishId(dishDTO.getId());
+            });
+            dishFlavorMapper.insertBatch(flavors);
+        }
     }
 }
