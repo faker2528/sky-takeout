@@ -6,7 +6,6 @@ import com.sky.enumeration.OperationType;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
-import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
 

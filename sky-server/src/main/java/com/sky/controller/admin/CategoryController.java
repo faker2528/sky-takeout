@@ -90,7 +90,7 @@ public class CategoryController {
     }
 
     /**
-     * 启用/禁用分类
+     * 根据类型查询分类
      * @param type
      * @return
      */
