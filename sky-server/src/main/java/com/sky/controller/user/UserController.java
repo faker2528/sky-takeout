@@ -55,7 +55,6 @@ public class UserController {
                 .openid(user.getOpenid())
                 .token(token)
                 .build();
-
         return Result.success(userLoginVO);
     }
 }
