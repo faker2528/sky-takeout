@@ -6,4 +6,16 @@
     <insert id="insert" useGeneratedKeys="true" keyProperty="id">
         insert into user(openid,create_time) values (#{openid},#{createTime})
     </insert>
+
+    <select id="countByMap" resultType="java.lang.Integer" parameterType="hashmap">
+        select count(id) from user
+        <where>
+            <if test="begin != null">
+                and create_time > #{begin}
+            </if>
+            <if test="end != null">
+                and create_time &lt;= #{end}
+            </if>
+        </where>
+    </select>
 </mapper>

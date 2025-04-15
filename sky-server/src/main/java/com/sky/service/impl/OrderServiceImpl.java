@@ -20,6 +20,7 @@ import com.sky.vo.OrderPaymentVO;
 import com.sky.vo.OrderStatisticsVO;
 import com.sky.vo.OrderSubmitVO;
 import com.sky.vo.OrderVO;
+import com.sky.websocket.WebSocketServer;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -53,6 +54,8 @@ public class OrderServiceImpl implements OrderService {
     private WeChatPayUtil weChatPayUtil;
     @Autowired
     private ShoppingCartMapper shoppingCartMapper;
+    @Autowired
+    private WebSocketServer webSocketServer;
 
     @Value("${sky.shop.address}")
     private String shopAddress;
@@ -118,6 +121,15 @@ public class OrderServiceImpl implements OrderService {
                 .orderTime(orders.getOrderTime())
                 .orderAmount(orders.getAmount())
                 .build();
+        //TODO 临时加的，这段代码应该在PayNotifyController类里的paySuccess方法内出现
+        //通过websocket向客户端浏览器推送消息  type orderId content
+        Map map = new HashMap() ;
+        map.put("type", "1");   // 1表示来单提醒， 2表示用户催单
+        map.put("orderId", orders.getId());
+        map.put("content", "订单号:"+orders.getNumber());
+        String json = JSON.toJSONString(map);
+        WebSocketServer.sendInfoToAll(json);
+
         return orderSubmitVO;
     }
 
@@ -172,11 +184,11 @@ public class OrderServiceImpl implements OrderService {
                 .build();
 
         orderMapper.update(orders);
-    }@Override
+    }
 
     /**
      * 用户端订单分页查询
-     * @param page
+     * @param pageNum
      * @param pageSize
      * @param status
      * @return
@@ -210,7 +222,7 @@ public class OrderServiceImpl implements OrderService {
             }
         }
         return new PageResult(page.getTotal(), list);
-    }@Override
+    }
 
     /**
     * 根据订单id查询订单详情
@@ -489,7 +501,24 @@ public class OrderServiceImpl implements OrderService {
         orderMapper.update(orders);
     }
 
-    /**
+	@Override
+	public void reminder(Long id) {
+		// 根据id查询订单
+		Orders ordersDB = orderMapper.getById(id);
+
+		// 校验订单是否存在，并且状态为4
+		if (ordersDB == null) {
+			throw new OrderBusinessException(MessageConstant.ORDER_STATUS_ERROR);
+		}
+		Map map = new HashMap();
+		map.put("orderId", id);
+		map.put("type", "2");
+		map.put("content", "订单号:" + ordersDB.getNumber());
+		String json = JSON.toJSONString(map);
+		WebSocketServer.sendInfoToAll(json);
+	}
+
+	/**
      * 检查客户的收货地址是否超出配送范围
      * @param address
      */
