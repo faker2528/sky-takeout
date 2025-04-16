@@ -60,4 +60,6 @@ public interface OrderMapper {
     List<Orders> getByStatusAndOrderTimeLT(Integer status, LocalDateTime orderTime);
 
     Double getTurnoverByMap(Map map);
+
+    Integer countByMap(Map map);
 }
